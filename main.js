@@ -33,11 +33,11 @@ tm.define("MainScene", {
         var scrollArea = tm.app.Object2D();
         scrollArea.addChildTo(this);
         scrollArea.update = function() {
-            // this.x = -piyo.x + 160;
-            // this.y = -piyo.y + 160;
+            // this.x = -piyo.x + app.width/2;
+            // this.y = -piyo.y + app.height/2;
             var xx = piyo.scaleX * 60;
-            this.x = Math.clamp(this.x + (-piyo.x + 160 + xx - this.x) * 0.05, -map.width, 0);
-            this.y = Math.clamp(this.y + (-piyo.y + 160 - this.y) * 0.1, -320, 320);
+            this.x = Math.clamp(this.x + (-piyo.x + app.width/2 + xx - this.x) * 0.05, -map.width, 0);
+            this.y = Math.clamp(this.y + (-piyo.y + app.height/2 - this.y) * 0.1, -200, map.height);
 
         };
 
@@ -239,15 +239,15 @@ tm.define("Enemy", {
 
     damage: function() {},
 
-    postUpdate: function() {
-        if (!this.active) {
-            return;
-        }
-
-        this.testPiyo();
+    preUpdate: function(app) {
+        this.act(app);
     },
 
-    testPiyo: function() {
+    postUpdate: function() {
+        if (this.active) this.testHitPiyo();
+    },
+
+    testHitPiyo: function() {
         if (this.isHitElement(piyo)) {
             if (piyo.y < this.y - this.radius/2) {
                 piyo.velocity.y = -8;
@@ -278,8 +278,10 @@ tm.define("WalkMecha", {
             }.bind(this));
     },
 
-    preUpdate: function(app) {
-        if (!this.active) {
+    act: function(app) {
+        if (this.active) {
+            this.velocity.x = this.scaleX * -0.5;
+        } else {
             this.velocity.x = 0;
             this.alpha = 0.8 * (app.frame % 2)
             if (this.jumping) {
@@ -287,8 +289,6 @@ tm.define("WalkMecha", {
             } else {
                 this.setFrameIndex(5);
             }
-        } else {
-            this.velocity.x = this.scaleX * -0.5;
         }
     },
 
@@ -320,8 +320,11 @@ tm.define("JumpMecha", {
             }.bind(this));
     },
 
-    preUpdate: function(app) {
-        if (!this.active) {
+    act: function(app) {
+        if (this.active) {
+            this.velocity.x = this.scaleX * -0.5;
+            this.velocity.y -= 0.2; // ふわふわする
+        } else {
             this.velocity.x = 0;
             this.alpha = 0.8 * (app.frame % 2)
             if (this.jumping) {
@@ -329,13 +332,11 @@ tm.define("JumpMecha", {
             } else {
                 this.setFrameIndex(5);
             }
-        } else {
-            this.velocity.x = this.scaleX * -0.4;
         }
     },
 
     onhitground: function() {
-        if (this.active) this.velocity.y = -8;
+        if (this.active) this.velocity.y = -6;
     },
 
     onhitleft: function() {
