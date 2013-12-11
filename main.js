@@ -29,13 +29,24 @@ tm.define("MainScene", {
         this.superInit();
         console.log("start MainScene");
 
+        var scrollArea = tm.app.Object2D();
+        scrollArea.addChildTo(this);
+        scrollArea.update = function() {
+            // this.x = -piyo.x + 160;
+            // this.y = -piyo.y + 160;
+            var xx = piyo.scaleX * 60;
+            this.x = Math.clamp(this.x + (-piyo.x + 160 + xx - this.x) * 0.05, -map.width, 0);
+            this.y = Math.clamp(this.y + (-piyo.y + 160 - this.y) * 0.1, -320, 320);
+
+        };
+
         var mapSheet = tm.asset.AssetManager.get("mapSheet");
         map = tm.display.MapSprite(mapSheet, 32, 32);
-        map.addChildTo(this);
+        map.addChildTo(scrollArea);
 
         piyo = Piyo();
         piyo.setPosition(150, 150);
-        piyo.addChildTo(this);
+        piyo.addChildTo(scrollArea);
     }
 
 });
@@ -66,9 +77,11 @@ tm.define("Piyo", {
         if (kb.getKey("left")) {
             // 左に加速
             this.velocity.x = Math.clamp(this.velocity.x - 0.5, -4, 4);
+            this.setScale(1, 1);
         } else if (kb.getKey("right")) {
             // 右に加速
             this.velocity.x = Math.clamp(this.velocity.x + 0.5, -4, 4);
+            this.setScale(-1, 1);
         } else {
             // 減速
             this.velocity.x *= 0.8;
@@ -105,11 +118,6 @@ tm.define("Piyo", {
         this.hitTest();
 
         // 絵柄変更
-        if (this.velocity.x < 0) {
-            this.setScale(1, 1);
-        } else if (this.velocity.x > 0) {
-            this.setScale(-1, 1);
-        }
         if (this.jumping) {
             if (this.velocity.y > 0) {
                 this.setFrameIndex(4);
@@ -147,6 +155,7 @@ tm.define("Piyo", {
 
         // 床との衝突判定
         // 足の部分が地形に触れなくなるまでひよこを上に移動させる
+        this.jumping = true;
         while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
             this.y -= 0.1;
             this.velocity.y = 0;
