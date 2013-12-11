@@ -51,8 +51,16 @@ tm.define("MainScene", {
         piyo.setPosition(150, 150);
         piyo.addChildTo(scrollArea);
 
-        WalkMecha().setPosition(260, 150).addChildTo(scrollArea);
-        JumpMecha().setPosition(360, 150).addChildTo(scrollArea);
+        var EnemyClasses = [null, WalkMecha, JumpMecha];
+        for (var y = 0; y < mapSheet.height; y++) {
+            for (var x = 0; x < mapSheet.width; x++) {
+                var data = mapSheet.layers[1].data[y*mapSheet.width + x];
+                if (data >= 1) {
+                    EnemyEgg(EnemyClasses[data]).setPosition(x*32, y*32).addChildTo(scrollArea);
+                }
+            }
+        }
+
     },
 
     gameover: function() {
@@ -171,6 +179,22 @@ tm.define("GObject", {
         this.hitGround = j && !this.jumping;
     }
 
+});
+
+tm.define("EnemyEgg", {
+    superClass: "tm.app.Object2D",
+
+    init: function(enemyClass) {
+        this.superInit();
+        this.enemyClass = enemyClass;
+    },
+
+    update: function() {
+        if (Math.abs(this.x - piyo.x) < 180) {
+            this.enemyClass().setPosition(this.x, this.y).addChildTo(this.parent);
+            this.remove();
+        }
+    }
 });
 
 tm.define("Piyo", {
