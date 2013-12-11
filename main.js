@@ -48,6 +48,14 @@ tm.define("Piyo", {
         this.setFrameIndex(0);
         this.setScale(-1, 1);
 
+        // 空中にいるフラグ
+        this.jumping = false;
+
+        // ジャンプボタン押しっぱなしフラグ
+        this.jumpPressed = false;
+        // ジャンプボタン押しっぱなしフレームカウンタ
+        this.jumpUpCount = 0;
+
         // 速度
         this.velocity = tm.geom.Vector2(0, 0);
     },
@@ -69,6 +77,24 @@ tm.define("Piyo", {
             }
         }
 
+        // ジャンプ
+        if (kb.getKeyDown("z") && !this.jumping) {
+            // 上に加速
+            this.velocity.y = Math.clamp(this.velocity.y - 4, -8, 8);
+            this.jumping = true;
+            this.jumpPressed = true;
+            this.jumpUpCount = 0;
+        } else if (kb.getKey("z") && this.jumpPressed) {
+            // ジャンプボタンを長く押すと高くジャンプできる
+            this.jumpUpCount += 1;
+            if (this.jumpUpCount < 7) {
+                // 上に加速
+                this.velocity.y = Math.clamp(this.velocity.y - 1, -8, 8);
+            }
+        } else if (kb.getKeyUp("z")) {
+            this.jumpPressed = false;
+        }
+
         // 重力
         this.velocity.y = Math.min(this.velocity.y + G, 8);
 
@@ -85,6 +111,7 @@ tm.define("Piyo", {
         while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
             this.y -= 0.1;
             this.velocity.y = 0;
+            this.jumping = false;
         }
     }
 
