@@ -103,6 +103,26 @@ tm.define("Piyo", {
 
         // 地形との衝突判定
         this.hitTest();
+
+        // 絵柄変更
+        if (this.velocity.x < 0) {
+            this.setScale(1, 1);
+        } else if (this.velocity.x > 0) {
+            this.setScale(-1, 1);
+        }
+        if (this.jumping) {
+            if (this.velocity.y > 0) {
+                this.setFrameIndex(4);
+            } else {
+                this.setFrameIndex(3);
+            }
+        } else {
+            if (this.velocity.x == 0) {
+                this.setFrameIndex(0);
+            } else {
+                this.setFrameIndex(1 + Math.floor(app.frame/3) % 3);
+            }
+        }
     },
 
     hitTest: function() {
