@@ -52,6 +52,10 @@ tm.define("MainScene", {
         var test = WalkMecha();
         test.setPosition(260, 150);
         test.addChildTo(scrollArea);
+
+        var test = JumpMecha();
+        test.setPosition(360, 150);
+        test.addChildTo(scrollArea);
     }
 
 });
@@ -62,6 +66,13 @@ tm.define("GObject", {
     init: function(texture, width, height) {
         this.superInit(texture, width, height);
         this.setFrameIndex(0);
+
+        // 左側の壁に衝突したフラグ
+        this.hitLeft = false;
+        // 右側の～
+        this.hitRight = false;
+        // 天井に頭をぶつけたフラグ
+        this.hitHead = false;
 
         // 空中にいるフラグ
         this.jumping = false;
@@ -85,32 +96,53 @@ tm.define("GObject", {
         this.position.add(this.velocity);
 
         // 地形との衝突判定
-        this.hitTest();
+        this.testHitTile();
 
         this.postUpdate(app);
+
+        if (this.hitLeft) {
+            this.dispatchEvent(tm.event.Event("hitleft"));
+        }
+        if (this.hitRight) {
+            this.dispatchEvent(tm.event.Event("hitright"));
+        }
+        if (this.hitHead) {
+            this.dispatchEvent(tm.event.Event("hithead"));
+        }
+        if (this.hitGround) {
+            this.dispatchEvent(tm.event.Event("hitground"));
+        }
     },
 
     preUpdate: function() {},
     postUpdate: function() {},
 
-    hitTest: function() {
+    testHitTile: function() {
+        var j = this.jumping;
+
         // 壁との衝突判定
         // 左側に壁がある場合
+        this.hitLeft = false;
         while (map.isHitPointTile(this.left, this.top + 10) || map.isHitPointTile(this.left, this.bottom - 10)) {
             this.x += 0.1;
             this.velocity.x = 0;
+            this.hitLeft = true;
         }
 
         // 右側に壁がある場合
+        this.hitRight = false;
         while (map.isHitPointTile(this.right, this.top + 10) || map.isHitPointTile(this.right, this.bottom - 10)) {
             this.x -= 0.1;
             this.velocity.x = 0;
+            this.hitRight = true;
         }
 
         // 天井との衝突判定
+        this.hitHead = false;
         while (map.isHitPointTile(this.left + 10, this.top) || map.isHitPointTile(this.right - 10, this.top)) {
             this.y += 0.1;
             this.velocity.y = 0;
+            this.hitHead = true;
         }
 
         // 床との衝突判定
@@ -121,6 +153,8 @@ tm.define("GObject", {
             this.velocity.y = 0;
             this.jumping = false;
         }
+
+        this.hitGround = j && !this.jumping;
     }
 
 });
@@ -131,6 +165,11 @@ tm.define("Piyo", {
     init: function() {
         this.superInit("piyoImage", 32, 32);
         this.setScale(-1, 1);
+        this.radius = 12;
+    },
+
+    damage: function() {
+        console.log("DAMAGE!!");
     },
 
     preUpdate: function(app) {
@@ -190,16 +229,121 @@ tm.define("Piyo", {
 
 });
 
-tm.define("WalkMecha", {
+tm.define("Enemy", {
     superClass: "GObject",
+
+    init: function(texture, width, height) {
+        this.superInit(texture, width, height);
+        this.active = true;
+    },
+
+    damage: function() {},
+
+    postUpdate: function() {
+        if (!this.active) {
+            return;
+        }
+
+        this.testPiyo();
+    },
+
+    testPiyo: function() {
+        if (this.isHitElement(piyo)) {
+            if (piyo.y < this.y - this.radius/2) {
+                piyo.velocity.y = -8;
+                this.velocity.y = 8;
+                this.damage();
+            } else {
+                piyo.damage();
+            }
+        }
+    }
+});
+
+tm.define("WalkMecha", {
+    superClass: "Enemy",
 
     init: function() {
         this.superInit("mechaImage", 32, 32);
-        this.setScale(1, 1);
+        this.scaleX = 1;
+        this.radius = 12;
     },
 
-    preUpdate: function() {
-        this.velocity.x = -0.5;
+    damage: function() {
+        this.active = false;
+        this.tweener.clear()
+            .wait(1000)
+            .call(function() {
+                this.remove();
+            }.bind(this));
+    },
+
+    preUpdate: function(app) {
+        if (!this.active) {
+            this.velocity.x = 0;
+            this.alpha = 0.8 * (app.frame % 2)
+            if (this.jumping) {
+                this.setFrameIndex(4);
+            } else {
+                this.setFrameIndex(5);
+            }
+        } else {
+            this.velocity.x = this.scaleX * -0.5;
+        }
+    },
+
+    onhitleft: function() {
+        if (this.active) this.scaleX = -1;
+    },
+
+    onhitright: function() {
+        if (this.active) this.scaleX = 1;
+    }
+
+});
+
+tm.define("JumpMecha", {
+    superClass: "Enemy",
+
+    init: function() {
+        this.superInit("mechaImage", 32, 32);
+        this.scaleX = 1;
+        this.radius = 12;
+    },
+
+    damage: function() {
+        this.active = false;
+        this.tweener.clear()
+            .wait(1000)
+            .call(function() {
+                this.remove();
+            }.bind(this));
+    },
+
+    preUpdate: function(app) {
+        if (!this.active) {
+            this.velocity.x = 0;
+            this.alpha = 0.8 * (app.frame % 2)
+            if (this.jumping) {
+                this.setFrameIndex(4);
+            } else {
+                this.setFrameIndex(5);
+            }
+        } else {
+            this.velocity.x = this.scaleX * -0.4;
+        }
+    },
+
+    onhitground: function() {
+        if (this.active) this.velocity.y = -8;
+    },
+
+    onhitleft: function() {
+        if (this.active) this.scaleX = -1;
+    },
+
+    onhitright: function() {
+        if (this.active) this.scaleX = 1;
     }
 
 });
