@@ -10,7 +10,8 @@ tm.main(function() {
         width: 320,
         height: 320,
         assets: {
-            "mapSheet": "map.tmx"
+            "mapSheet": "map.tmx",
+            "piyoImage": "hiyoco_nomal_full.png"
         },
         nextScene: MainScene
     }));
@@ -27,6 +28,20 @@ tm.define("MainScene", {
         var mapSheet = tm.asset.AssetManager.get("mapSheet");
         map = tm.display.MapSprite(mapSheet, 32, 32);
         map.addChildTo(this);
+
+        var piyo = Piyo();
+        piyo.setPosition(150, 150);
+        piyo.addChildTo(this);
     }
 
+});
+
+tm.define("Piyo", {
+    superClass: "tm.display.Sprite",
+
+    init: function() {
+        this.superInit("piyoImage", 32, 32);
+        this.setFrameIndex(0);
+        this.setScale(-1, 1);
+    }
 });
