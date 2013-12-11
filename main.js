@@ -2,6 +2,8 @@ var app;
 var map;
 var piyo;
 
+var G = 0.4;
+
 tm.main(function() {
     console.log("main start");
 
@@ -67,8 +69,23 @@ tm.define("Piyo", {
             }
         }
 
+        // 重力
+        this.velocity.y = Math.min(this.velocity.y + G, 8);
+
         // 位置に速度を足す
         this.position.add(this.velocity);
+
+        // 地形との衝突判定
+        this.hitTest();
+    },
+
+    hitTest: function() {
+        // 床との衝突判定
+        // 足の部分が地形に触れなくなるまでひよこを上に移動させる
+        while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
+            this.y -= 0.1;
+            this.velocity.y = 0;
+        }
     }
 
 });
