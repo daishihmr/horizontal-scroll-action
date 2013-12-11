@@ -1,4 +1,5 @@
 var app;
+var scene;
 var map;
 var piyo;
 
@@ -28,6 +29,7 @@ tm.define("MainScene", {
 
     init: function() {
         this.superInit();
+        scene = this;
         console.log("start MainScene");
 
         var scrollArea = tm.app.Object2D();
@@ -37,7 +39,7 @@ tm.define("MainScene", {
             // this.y = -piyo.y + app.height/2;
             var xx = piyo.scaleX * 60;
             this.x = Math.clamp(this.x + (-piyo.x + app.width/2 + xx - this.x) * 0.05, -map.width, 0);
-            this.y = Math.clamp(this.y + (-piyo.y + app.height/2 - this.y) * 0.1, -200, map.height);
+            this.y = Math.clamp(this.y + (-piyo.y + app.height/2 - this.y) * 0.1, -320, map.height);
 
         };
 
@@ -51,6 +53,23 @@ tm.define("MainScene", {
 
         WalkMecha().setPosition(260, 150).addChildTo(scrollArea);
         JumpMecha().setPosition(360, 150).addChildTo(scrollArea);
+    },
+
+    gameover: function() {
+        var label = tm.display.Label("GAME OVER", 40)
+            .setFillStyle("red")
+            .setAlpha(0)
+            .setAlign("center")
+            .setBaseline("middle")
+            .setPosition(app.width/2, app.height/2)
+            .addChildTo(this);
+        label.tweener.clear()
+            .to({
+                alpha: 1
+            }, 1000)
+            .call(function() {
+                app.stop();
+            });
     }
 
 });
@@ -179,6 +198,8 @@ tm.define("Piyo", {
         this.hp -= 1;
         if (this.hp > 0) {
             this.muteki = 60;
+        } else {
+            scene.gameover();
         }
     },
 
@@ -229,6 +250,11 @@ tm.define("Piyo", {
     },
 
     postUpdate: function(app) {
+        if (this.y > 1000 && this.hp > 0) {
+            this.hp = 0;
+            scene.gameover();
+        }
+
         if (this.hp > 0) {
             // 絵柄変更
             if (this.jumping) {
