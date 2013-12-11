@@ -1,4 +1,5 @@
 var app;
+var map;
 
 tm.main(function() {
     console.log("main start");
@@ -9,6 +10,7 @@ tm.main(function() {
         width: 320,
         height: 320,
         assets: {
+            "mapSheet": "map.tmx"
         },
         nextScene: MainScene
     }));
@@ -20,8 +22,11 @@ tm.define("MainScene", {
 
     init: function() {
         this.superInit();
-
         console.log("start MainScene");
+
+        var mapSheet = tm.asset.AssetManager.get("mapSheet");
+        map = tm.display.MapSprite(mapSheet, 32, 32);
+        map.addChildTo(this);
     }
 
 });
