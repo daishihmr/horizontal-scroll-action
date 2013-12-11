@@ -15,7 +15,8 @@ tm.main(function() {
         height: 320,
         assets: {
             "mapSheet": "map.tmx",
-            "piyoImage": "hiyoco_nomal_full.png"
+            "piyoImage": "hiyoco_nomal_full.png",
+            "mechaImage": "hiyoco_mecha_full.png"
         },
         nextScene: MainScene
     }));
@@ -47,17 +48,20 @@ tm.define("MainScene", {
         piyo = Piyo();
         piyo.setPosition(150, 150);
         piyo.addChildTo(scrollArea);
+
+        var test = WalkMecha();
+        test.setPosition(260, 150);
+        test.addChildTo(scrollArea);
     }
 
 });
 
-tm.define("Piyo", {
+tm.define("GObject", {
     superClass: "tm.display.Sprite",
 
-    init: function() {
-        this.superInit("piyoImage", 32, 32);
+    init: function(texture, width, height) {
+        this.superInit(texture, width, height);
         this.setFrameIndex(0);
-        this.setScale(-1, 1);
 
         // 空中にいるフラグ
         this.jumping = false;
@@ -72,6 +76,64 @@ tm.define("Piyo", {
     },
 
     update: function(app) {
+        this.preUpdate(app);
+
+        // 重力
+        this.velocity.y = Math.min(this.velocity.y + G, 8);
+
+        // 位置に速度を足す
+        this.position.add(this.velocity);
+
+        // 地形との衝突判定
+        this.hitTest();
+
+        this.postUpdate(app);
+    },
+
+    preUpdate: function() {},
+    postUpdate: function() {},
+
+    hitTest: function() {
+        // 壁との衝突判定
+        // 左側に壁がある場合
+        while (map.isHitPointTile(this.left, this.top + 10) || map.isHitPointTile(this.left, this.bottom - 10)) {
+            this.x += 0.1;
+            this.velocity.x = 0;
+        }
+
+        // 右側に壁がある場合
+        while (map.isHitPointTile(this.right, this.top + 10) || map.isHitPointTile(this.right, this.bottom - 10)) {
+            this.x -= 0.1;
+            this.velocity.x = 0;
+        }
+
+        // 天井との衝突判定
+        while (map.isHitPointTile(this.left + 10, this.top) || map.isHitPointTile(this.right - 10, this.top)) {
+            this.y += 0.1;
+            this.velocity.y = 0;
+        }
+
+        // 床との衝突判定
+        // 足の部分が地形に触れなくなるまでひよこを上に移動させる
+        this.jumping = true;
+        while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
+            this.y -= 0.1;
+            this.velocity.y = 0;
+            this.jumping = false;
+        }
+    }
+
+});
+
+tm.define("Piyo", {
+    superClass: "GObject",
+
+    init: function() {
+        this.superInit("piyoImage", 32, 32);
+        this.setScale(-1, 1);
+    },
+
+    preUpdate: function(app) {
         var kb = app.keyboard;
 
         if (kb.getKey("left")) {
@@ -107,16 +169,9 @@ tm.define("Piyo", {
         } else if (kb.getKeyUp("z")) {
             this.jumpPressed = false;
         }
+    },
 
-        // 重力
-        this.velocity.y = Math.min(this.velocity.y + G, 8);
-
-        // 位置に速度を足す
-        this.position.add(this.velocity);
-
-        // 地形との衝突判定
-        this.hitTest();
-
+    postUpdate: function() {
         // 絵柄変更
         if (this.jumping) {
             if (this.velocity.y > 0) {
@@ -133,34 +188,18 @@ tm.define("Piyo", {
         }
     },
 
-    hitTest: function() {
-        // 壁との衝突判定
-        // 左側に壁がある場合
-        while (map.isHitPointTile(this.left, this.top + 10) || map.isHitPointTile(this.left, this.bottom - 10)) {
-            this.x += 0.1;
-            this.velocity.x = 0;
-        }
+});
 
-        // 右側に壁がある場合
-        while (map.isHitPointTile(this.right, this.top + 10) || map.isHitPointTile(this.right, this.bottom - 10)) {
-            this.x -= 0.1;
-            this.velocity.x = 0;
-        }
+tm.define("WalkMecha", {
+    superClass: "GObject",
 
-        // 天井との衝突判定
-        while (map.isHitPointTile(this.left + 10, this.top) || map.isHitPointTile(this.right - 10, this.top)) {
-            this.y += 0.1;
-            this.velocity.y = 0;
-        }
+    init: function() {
+        this.superInit("mechaImage", 32, 32);
+        this.setScale(1, 1);
+    },
 
-        // 床との衝突判定
-        // 足の部分が地形に触れなくなるまでひよこを上に移動させる
-        this.jumping = true;
-        while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
-            this.y -= 0.1;
-            this.velocity.y = 0;
-            this.jumping = false;
-        }
+    preUpdate: function() {
+        this.velocity.x = -0.5;
     }
 
 });
