@@ -106,6 +106,25 @@ tm.define("Piyo", {
     },
 
     hitTest: function() {
+        // 壁との衝突判定
+        // 左側に壁がある場合
+        while (map.isHitPointTile(this.left, this.top + 10) || map.isHitPointTile(this.left, this.bottom - 10)) {
+            this.x += 0.1;
+            this.velocity.x = 0;
+        }
+
+        // 右側に壁がある場合
+        while (map.isHitPointTile(this.right, this.top + 10) || map.isHitPointTile(this.right, this.bottom - 10)) {
+            this.x -= 0.1;
+            this.velocity.x = 0;
+        }
+
+        // 天井との衝突判定
+        while (map.isHitPointTile(this.left + 10, this.top) || map.isHitPointTile(this.right - 10, this.top)) {
+            this.y += 0.1;
+            this.velocity.y = 0;
+        }
+
         // 床との衝突判定
         // 足の部分が地形に触れなくなるまでひよこを上に移動させる
         while (map.isHitPointTile(this.left + 10, this.bottom) || map.isHitPointTile(this.right - 10, this.bottom)) {
