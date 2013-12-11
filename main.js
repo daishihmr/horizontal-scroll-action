@@ -49,13 +49,8 @@ tm.define("MainScene", {
         piyo.setPosition(150, 150);
         piyo.addChildTo(scrollArea);
 
-        var test = WalkMecha();
-        test.setPosition(260, 150);
-        test.addChildTo(scrollArea);
-
-        var test = JumpMecha();
-        test.setPosition(360, 150);
-        test.addChildTo(scrollArea);
+        WalkMecha().setPosition(260, 150).addChildTo(scrollArea);
+        JumpMecha().setPosition(360, 150).addChildTo(scrollArea);
     }
 
 });
@@ -166,23 +161,64 @@ tm.define("Piyo", {
         this.superInit("piyoImage", 32, 32);
         this.setScale(-1, 1);
         this.radius = 12;
+
+        this.hp = 10;
+        this.muteki = 60;
     },
 
-    damage: function() {
-        console.log("DAMAGE!!");
+    damage: function(enemy) {
+        if (this.muteki > 0 || this.hp <= 0) return;
+
+        if (enemy.x > this.x) {
+            this.velocity.x = -8;
+        } else {
+            this.velocity.x = 8;
+        }
+        this.velocity.y = -2;
+
+        this.hp -= 1;
+        if (this.hp > 0) {
+            this.muteki = 60;
+        }
     },
 
     preUpdate: function(app) {
-        var kb = app.keyboard;
+        if (this.hp > 0) {
+            var kb = app.keyboard;
 
-        if (kb.getKey("left")) {
-            // 左に加速
-            this.velocity.x = Math.clamp(this.velocity.x - 0.5, -4, 4);
-            this.setScale(1, 1);
-        } else if (kb.getKey("right")) {
-            // 右に加速
-            this.velocity.x = Math.clamp(this.velocity.x + 0.5, -4, 4);
-            this.setScale(-1, 1);
+            if (kb.getKey("left")) {
+                // 左に加速
+                this.velocity.x = Math.clamp(this.velocity.x - 0.5, -4, 4);
+                this.setScale(1, 1);
+            } else if (kb.getKey("right")) {
+                // 右に加速
+                this.velocity.x = Math.clamp(this.velocity.x + 0.5, -4, 4);
+                this.setScale(-1, 1);
+            } else {
+                // 減速
+                this.velocity.x *= 0.8;
+                if (-0.1 < this.velocity.x && this.velocity.x < 0.1) {
+                    this.velocity.x = 0;
+                }
+            }
+
+            // ジャンプ
+            if (kb.getKeyDown("z") && !this.jumping) {
+                // 上に加速
+                this.velocity.y = Math.clamp(this.velocity.y - 4, -8, 8);
+                this.jumping = true;
+                this.jumpPressed = true;
+                this.jumpUpCount = 0;
+            } else if (kb.getKey("z") && this.jumpPressed) {
+                // ジャンプボタンを長く押すと高くジャンプできる
+                this.jumpUpCount += 1;
+                if (this.jumpUpCount < 7) {
+                    // 上に加速
+                    this.velocity.y = Math.clamp(this.velocity.y - 1, -8, 8);
+                }
+            } else if (kb.getKeyUp("z")) {
+                this.jumpPressed = false;
+            }
         } else {
             // 減速
             this.velocity.x *= 0.8;
@@ -190,39 +226,36 @@ tm.define("Piyo", {
                 this.velocity.x = 0;
             }
         }
-
-        // ジャンプ
-        if (kb.getKeyDown("z") && !this.jumping) {
-            // 上に加速
-            this.velocity.y = Math.clamp(this.velocity.y - 4, -8, 8);
-            this.jumping = true;
-            this.jumpPressed = true;
-            this.jumpUpCount = 0;
-        } else if (kb.getKey("z") && this.jumpPressed) {
-            // ジャンプボタンを長く押すと高くジャンプできる
-            this.jumpUpCount += 1;
-            if (this.jumpUpCount < 7) {
-                // 上に加速
-                this.velocity.y = Math.clamp(this.velocity.y - 1, -8, 8);
-            }
-        } else if (kb.getKeyUp("z")) {
-            this.jumpPressed = false;
-        }
     },
 
-    postUpdate: function() {
-        // 絵柄変更
-        if (this.jumping) {
-            if (this.velocity.y > 0) {
-                this.setFrameIndex(4);
+    postUpdate: function(app) {
+        if (this.hp > 0) {
+            // 絵柄変更
+            if (this.jumping) {
+                if (this.velocity.y > 0) {
+                    this.setFrameIndex(4);
+                } else {
+                    this.setFrameIndex(3);
+                }
             } else {
-                this.setFrameIndex(3);
+                if (this.velocity.x == 0) {
+                    this.setFrameIndex(0);
+                } else {
+                    this.setFrameIndex(1 + Math.floor(app.frame/3) % 3);
+                }
+            }
+
+            this.muteki -= 1;
+            if (this.muteki > 0) {
+                this.alpha = 0.8 * (app.frame % 2);
+            } else {
+                this.alpha = 1;
             }
         } else {
-            if (this.velocity.x == 0) {
-                this.setFrameIndex(0);
+            if (this.jumping) {
+                this.setFrameIndex(4);
             } else {
-                this.setFrameIndex(1 + Math.floor(app.frame/3) % 3);
+                this.setFrameIndex(5);
             }
         }
     },
@@ -254,7 +287,7 @@ tm.define("Enemy", {
                 this.velocity.y = 8;
                 this.damage();
             } else {
-                piyo.damage();
+                piyo.damage(this);
             }
         }
     }
